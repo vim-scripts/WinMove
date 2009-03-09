@@ -1,0 +1,28 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=2576
+
+Usage:
+  MAPPING:
+      <Up>        move your gVim up.
+      <Right>    move your gVim right.
+      <Down>   move your gVim down.
+      <Left>      move your gVim left.
+
+  GLOBAL VARIABLES:
+      g:wm_move_up (default:'<Up>')
+          if empty string, no mapping is defined.
+
+      g:wm_move_right (default:'<Right>')
+          if empty string, no mapping is defined.
+
+      g:wm_move_down (default:'<Down>')
+          if empty string, no mapping is defined.
+
+      g:wm_move_left (default:'<Left>')
+          if empty string, no mapping is defined.
+
+      g:wm_move_x (default:20)
+          gVim use this when move left or right.
+
+      g:wm_move_y (default:15)
+          gVim use this when move up or down.
+
