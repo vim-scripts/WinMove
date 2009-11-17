@@ -4,16 +4,19 @@ scriptencoding utf-8
 " DOCUMENT {{{1
 "==================================================
 " Name: WinMove
-" Version: 0.0.1
-" Author:  tyru <tyru.exe+vim@gmail.com>
-" Last Change: 2009-04-09.
+" Version: 0.0.2
+" Author:  tyru <tyru.exe@gmail.com>
+" Last Change: 2009-11-17.
 "
 " Change Log: {{{2
-"   1.0.0: Initial upload.
+"   0.0.0: Initial upload.
+"   0.0.1: my e-mail address was wrong :-p
+"   0.0.2: Allow range before mappings
+"          e.g.: '10<Up>' moves gVim window to the upper 10 times
 " }}}2
 "
 " Description:
-"   Move your gVim around.
+"   Move your gVim from mappings.
 "
 " Usage:
 "   MAPPING:
@@ -85,9 +88,9 @@ endif
 
 " FUNCTION DEFINITION {{{1
 
-func! s:MoveTo( dest ) range
+func! s:MoveTo( dest )
     let winpos = { 'x':getwinposx(), 'y':getwinposy() }
-    let repeat = a:lastline - a:firstline + 1
+    let repeat = v:count1
 
     if a:dest == '>'
         let winpos['x'] = winpos['x'] + g:wm_move_x * repeat
@@ -99,7 +102,7 @@ func! s:MoveTo( dest ) range
         let winpos['y'] = winpos['y'] + g:wm_move_y * repeat
     endif
 
-    execute 'winpos ' . winpos['x'] . ' ' . winpos['y']
+    execute 'winpos' winpos['x'] winpos['y']
 endfunc
 
 " }}}1
@@ -113,8 +116,10 @@ let s:mappings = {
 \ }
 for key in keys(s:mappings)
     if s:mappings[key] != ""
-        let fmt = 'nnoremap <silent> %s    :<C-u>call <SID>MoveTo("%s")<CR>'
-        execute printf(fmt, s:mappings[key], key)
+        execute 'nnoremap'
+                    \ '<silent>'
+                    \ s:mappings[key]
+                    \ printf(':<C-u>call <SID>MoveTo(%s)<CR>', string(key))
     endif
 endfor
 unlet s:mappings
