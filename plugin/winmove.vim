@@ -6,13 +6,16 @@ scriptencoding utf-8
 " Name: WinMove
 " Version: 0.0.2
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2009-11-17.
+" Last Change: 2010-11-11.
+" License: Distributable under the same terms as Vim itself (see :help license)
 "
 " Change Log: {{{2
 "   0.0.0: Initial upload.
 "   0.0.1: my e-mail address was wrong :-p
 "   0.0.2: Allow range before mappings
 "          e.g.: '10<Up>' moves gVim window to the upper 10 times
+"   0.0.3: Fix bug: gvim moves oppositely on MacVim.
+"          Thanks ujihisa for the patch.
 " }}}2
 "
 " Description:
@@ -88,7 +91,7 @@ endif
 
 " FUNCTION DEFINITION {{{1
 
-func! s:MoveTo( dest )
+func! s:MoveTo(dest)
     let winpos = { 'x':getwinposx(), 'y':getwinposy() }
     let repeat = v:count1
 
@@ -97,9 +100,13 @@ func! s:MoveTo( dest )
     elseif a:dest == '<'
         let winpos['x'] = winpos['x'] - g:wm_move_x * repeat
     elseif a:dest == '^'
-        let winpos['y'] = winpos['y'] - g:wm_move_y * repeat
+        let winpos['y'] = has("gui_macvim") ?
+              \ winpos['y'] + g:wm_move_y * repeat :
+              \ winpos['y'] - g:wm_move_y * repeat
     elseif a:dest == 'v'
-        let winpos['y'] = winpos['y'] + g:wm_move_y * repeat
+        let winpos['y'] = has("gui_macvim") ?
+              \ winpos['y'] - g:wm_move_y * repeat :
+              \ winpos['y'] + g:wm_move_y * repeat
     endif
 
     execute 'winpos' winpos['x'] winpos['y']
@@ -108,21 +115,23 @@ endfunc
 " }}}1
 
 " MAPPING {{{1
-let s:mappings = {
-    \ '^': g:wm_move_up,
-    \ '>': g:wm_move_right,
-    \ 'v': g:wm_move_down,
-    \ '<': g:wm_move_left
-\ }
-for key in keys(s:mappings)
-    if s:mappings[key] != ""
-        execute 'nnoremap'
-                    \ '<silent>'
-                    \ s:mappings[key]
-                    \ printf(':<C-u>call <SID>MoveTo(%s)<CR>', string(key))
-    endif
-endfor
-unlet s:mappings
+nnoremap <Plug>(winmove-up)     :<C-u>call <SID>MoveTo('^')<CR>
+nnoremap <Plug>(winmove-right)  :<C-u>call <SID>MoveTo('>')<CR>
+nnoremap <Plug>(winmove-down)   :<C-u>call <SID>MoveTo('v')<CR>
+nnoremap <Plug>(winmove-left)   :<C-u>call <SID>MoveTo('<')<CR>
+
+if g:wm_move_up != ''
+    execute 'nmap' g:wm_move_up '<Plug>(winmove-up)'
+endif
+if g:wm_move_right != ''
+    execute 'nmap' g:wm_move_right '<Plug>(winmove-right)'
+endif
+if g:wm_move_down != ''
+    execute 'nmap' g:wm_move_down '<Plug>(winmove-down)'
+endif
+if g:wm_move_left != ''
+    execute 'nmap' g:wm_move_left '<Plug>(winmove-left)'
+endif
 " }}}1
 
 " RESTORE CPO {{{1
