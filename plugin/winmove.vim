@@ -1,32 +1,35 @@
 " vim:foldmethod=marker:fen:
 scriptencoding utf-8
 
-" DOCUMENT {{{1
+" DOCUMENT {{{
 "==================================================
 " Name: WinMove
-" Version: 0.0.2
+" Version: 0.0.4
 " Author:  tyru <tyru.exe@gmail.com>
-" Last Change: 2010-11-11.
+" Last Change: 2010-12-27.
 " License: Distributable under the same terms as Vim itself (see :help license)
 "
-" Change Log: {{{2
+" Change Log: {{{
 "   0.0.0: Initial upload.
 "   0.0.1: my e-mail address was wrong :-p
 "   0.0.2: Allow range before mappings
 "          e.g.: '10<Up>' moves gVim window to the upper 10 times
 "   0.0.3: Fix bug: gvim moves oppositely on MacVim.
 "          Thanks ujihisa for the patch.
-" }}}2
+"   0.0.4: Fix bug: :winpos raised an error
+"          because :winpos is not available at startup.
+"          (the problem occurred on gVim Windows XP)
+" }}}
 "
 " Description:
-"   Move your gVim from mappings.
+"   Move your Vim from mappings.
 "
 " Usage:
 "   MAPPING:
-"       <Up>        move your gVim up.
-"       <Right>     move your gVim right.
-"       <Down>      move your gVim down.
-"       <Left>      move your gVim left.
+"       <Up>        move your Vim up.
+"       <Right>     move your Vim right.
+"       <Down>      move your Vim down.
+"       <Left>      move your Vim left.
 "
 "   GLOBAL VARIABLES:
 "       g:wm_move_up (default:'<Up>')
@@ -42,33 +45,49 @@ scriptencoding utf-8
 "           if empty string, no mapping is defined.
 "
 "       g:wm_move_x (default:20)
-"           gVim use this when move left or right.
+"           Vim use this when move left or right.
 "
 "       g:wm_move_y (default:15)
-"           gVim use this when move up or down.
+"           Vim use this when move up or down.
 "
 "
 "==================================================
-" }}}1
+" }}}
 
-" INCLUDE GUARD {{{1
+" CHECK AVAILABILITY {{{
+
+" NOTE: Delay the a load of this script until VimEnter.
+" Because :winpos raised an error on gVim (Windows)
+" while loading this script at startup.
+augroup winmove
+    autocmd!
+    autocmd VimEnter * let s:delayed = 1 | source <sfile>
+augroup END
+if !exists('s:delayed')
+    finish
+endif
+
+" THIS PLUGIN WORK ON TERMINAL ALSO.
+try
+    silent winpos
+catch /^Vim\%((\a\+)\)\=:E188/
+    finish
+endtry
+" }}}
+
+" INCLUDE GUARD {{{
 if exists('g:loaded_winmove') && g:loaded_winmove != 0
     finish
 endif
 let g:loaded_winmove = 1
-" }}}1
+" }}}
 
-" NOTE: THIS PLUGIN CAN'T WORK IN TERMINAL.
-if ! has('gui_running')
-    finish
-endif
-
-" SAVING CPO {{{1
+" SAVING CPO {{{
 let s:save_cpo = &cpo
 set cpo&vim
-" }}}1
+" }}}
 
-" GLOBAL VARIABLES {{{1
+" GLOBAL VARIABLES {{{
 if ! exists('g:wm_move_up')
     let g:wm_move_up = '<Up>'
 endif
@@ -87,12 +106,19 @@ endif
 if ! exists('g:wm_move_y')
     let g:wm_move_y = 15
 endif
-" }}}1
+" }}}
 
-" FUNCTION DEFINITION {{{1
+" FUNCTION DEFINITION {{{
 
-func! s:MoveTo(dest)
-    let winpos = { 'x':getwinposx(), 'y':getwinposy() }
+function! s:MoveTo(dest)
+    if has('gui_running')
+        let winpos = { 'x':getwinposx(), 'y':getwinposy() }
+    else
+        redir => out | silent! winpos | redir END
+        let mpos = matchlist(out, '^[^:]\+: X \(-\?\d\+\), Y \(-\?\d\+\)')
+        if len(mpos) == 0 | return | endif
+        let winpos = { 'x':mpos[1], 'y':mpos[2] }
+    endif
     let repeat = v:count1
 
     if a:dest == '>'
@@ -108,17 +134,19 @@ func! s:MoveTo(dest)
               \ winpos['y'] - g:wm_move_y * repeat :
               \ winpos['y'] + g:wm_move_y * repeat
     endif
+    if winpos['x'] < 0 | let winpos['x'] = 0 | endif
+    if winpos['y'] < 0 | let winpos['y'] = 0 | endif
 
     execute 'winpos' winpos['x'] winpos['y']
-endfunc
+endfunction
 
-" }}}1
+" }}}
 
-" MAPPING {{{1
-nnoremap <Plug>(winmove-up)     :<C-u>call <SID>MoveTo('^')<CR>
-nnoremap <Plug>(winmove-right)  :<C-u>call <SID>MoveTo('>')<CR>
-nnoremap <Plug>(winmove-down)   :<C-u>call <SID>MoveTo('v')<CR>
-nnoremap <Plug>(winmove-left)   :<C-u>call <SID>MoveTo('<')<CR>
+" MAPPING {{{
+nnoremap <silent> <Plug>(winmove-up)     :<C-u>call <SID>MoveTo('^')<CR>
+nnoremap <silent> <Plug>(winmove-right)  :<C-u>call <SID>MoveTo('>')<CR>
+nnoremap <silent> <Plug>(winmove-down)   :<C-u>call <SID>MoveTo('v')<CR>
+nnoremap <silent> <Plug>(winmove-left)   :<C-u>call <SID>MoveTo('<')<CR>
 
 if g:wm_move_up != ''
     execute 'nmap' g:wm_move_up '<Plug>(winmove-up)'
@@ -132,9 +160,9 @@ endif
 if g:wm_move_left != ''
     execute 'nmap' g:wm_move_left '<Plug>(winmove-left)'
 endif
-" }}}1
+" }}}
 
-" RESTORE CPO {{{1
+" RESTORE CPO {{{
 let &cpo = s:save_cpo
-" }}}1
+" }}}
 
